@@ -1,89 +1,92 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Panel de Dispositivos</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-  background: #0b0e1a;
-  color: #eaeaff;
-  font-family: system-ui;
-  padding: 20px;
-}
-.card {
-  background: #161a33;
-  padding: 16px;
-  border-radius: 14px;
-  margin-bottom: 16px;
-}
-button {
-  background: #4b6bff;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-canvas {
-  max-width: 300px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB Device Inspector</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .btn-connect { display: block; width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        .btn-connect:hover { background: #0056b3; }
+        #device-info { margin-top: 20px; display: none; }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        canvas { max-width: 100%; margin-top: 20px; }
+    </style>
 </head>
 <body>
 
-<h1>🔌 Dispositivos Conectados</h1>
+<div class="container">
+    <h1>Inspector de Dispositivos USB</h1>
+    <button class="btn-connect" id="connect-usb">Conectar Dispositivo USB</button>
 
-<div class="card">
-  <button onclick="conectarUSB()">Detectar USB</button>
-  <p id="usbInfo">Ningún dispositivo conectado</p>
-</div>
+    <div id="device-info">
+        <div class="card">
+            <h3>Detalles del Hardware</h3>
+            <p><strong>Nombre:</strong> <span id="dev-name"></span></p>
+            <p><strong>Vendor ID:</strong> <span id="dev-vendor"></span></p>
+            <p><strong>Product ID:</strong> <span id="dev-product"></span></p>
+        </div>
 
-<div class="card">
-  <h3>Almacenamiento (estimado)</h3>
-  <canvas id="storageChart"></canvas>
+        <div class="card">
+            <h3>Uso de Almacenamiento (Simulado)</h3>
+            <canvas id="storageChart"></canvas>
+        </div>
+    </div>
 </div>
 
 <script>
-async function conectarUSB() {
-  if (!navigator.usb) {
-    document.getElementById("usbInfo").textContent =
-      "WebUSB no soportado en este navegador";
-    return;
-  }
+    const connectBtn = document.getElementById('connect-usb');
+    const deviceInfo = document.getElementById('device-info');
+    let storageChart;
 
-  try {
-    const device = await navigator.usb.requestDevice({ filters: [] });
-    await device.open();
+    connectBtn.addEventListener('click', async () => {
+        try {
+            // Solicitar permiso para acceder a un dispositivo USB
+            const device = await navigator.usb.requestDevice({ filters: [] });
+            
+            await device.open();
+            await device.selectConfiguration(1);
+            await device.claimInterface(0);
 
-    document.getElementById("usbInfo").innerHTML = `
-      <strong>Nombre:</strong> ${device.productName || "Desconocido"}<br>
-      <strong>Fabricante:</strong> ${device.manufacturerName || "Desconocido"}<br>
-      <strong>Vendor ID:</strong> ${device.vendorId}<br>
-      <strong>Product ID:</strong> ${device.productId}
-    `;
-  } catch {
-    document.getElementById("usbInfo").textContent =
-      "Permiso cancelado o error";
-  }
-}
+            // Mostrar info básica
+            document.getElementById('dev-name').textContent = device.productName || "Dispositivo Desconocido";
+            document.getElementById('dev-vendor').textContent = device.vendorId;
+            document.getElementById('dev-product').textContent = device.productId;
+            deviceInfo.style.display = 'block';
 
-const ctx = document.getElementById("storageChart");
-new Chart(ctx, {
-  type: "doughnut",
-  data: {
-    labels: ["Usado", "Libre"],
-    datasets: [{
-      data: [20, 44],
-      borderWidth: 0
-    }]
-  },
-  options: {
-    plugins: {
-      legend: { labels: { color: "white" } }
+            // Generar gráfica de almacenamiento (Datos simulados)
+            renderChart();
+            
+        } catch (err) {
+            console.error(err);
+            alert("Error: " + err.message);
+        }
+    });
+
+    function renderChart() {
+        const ctx = document.getElementById('storageChart').getContext('2d');
+        if (storageChart) storageChart.destroy();
+
+        storageChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Usado (GB)', 'Libre (GB)'],
+                datasets: [{
+                    data: [45, 15], // Valores de ejemplo
+                    backgroundColor: ['#ff6384', '#36a2eb']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
     }
-  }
-});
 </script>
 
 </body>
