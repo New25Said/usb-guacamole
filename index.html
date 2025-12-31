@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel de Dispositivos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+  background: #0b0e1a;
+  color: #eaeaff;
+  font-family: system-ui;
+  padding: 20px;
+}
+.card {
+  background: #161a33;
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+button {
+  background: #4b6bff;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+canvas {
+  max-width: 300px;
+}
+</style>
+</head>
+<body>
+
+<h1>🔌 Dispositivos Conectados</h1>
+
+<div class="card">
+  <button onclick="conectarUSB()">Detectar USB</button>
+  <p id="usbInfo">Ningún dispositivo conectado</p>
+</div>
+
+<div class="card">
+  <h3>Almacenamiento (estimado)</h3>
+  <canvas id="storageChart"></canvas>
+</div>
+
+<script>
+async function conectarUSB() {
+  if (!navigator.usb) {
+    document.getElementById("usbInfo").textContent =
+      "WebUSB no soportado en este navegador";
+    return;
+  }
+
+  try {
+    const device = await navigator.usb.requestDevice({ filters: [] });
+    await device.open();
+
+    document.getElementById("usbInfo").innerHTML = `
+      <strong>Nombre:</strong> ${device.productName || "Desconocido"}<br>
+      <strong>Fabricante:</strong> ${device.manufacturerName || "Desconocido"}<br>
+      <strong>Vendor ID:</strong> ${device.vendorId}<br>
+      <strong>Product ID:</strong> ${device.productId}
+    `;
+  } catch {
+    document.getElementById("usbInfo").textContent =
+      "Permiso cancelado o error";
+  }
+}
+
+const ctx = document.getElementById("storageChart");
+new Chart(ctx, {
+  type: "doughnut",
+  data: {
+    labels: ["Usado", "Libre"],
+    datasets: [{
+      data: [20, 44],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { labels: { color: "white" } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
